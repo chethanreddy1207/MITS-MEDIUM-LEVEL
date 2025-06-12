@@ -1,0 +1,106 @@
+from flask import Flask, request, make_response, render_template_string
+from reportlab.lib.pagesizes import LETTER
+from reportlab.pdfgen import canvas
+import io
+
+app = Flask(__name__)
+
+# HTML FORM CODE
+form_html = '''
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Offer Letter Generator</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', serif;
+      background-color: pink;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+    }
+    .form-container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0px 0px 10px gray;
+      text-align: center;
+    }
+    input {
+      padding: 8px;
+      margin: 8px;
+      width: 250px;
+    }
+    button {
+      padding: 10px 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Generate Your Offer Letter</h2>
+    <form method="post" action="/generate_offer_letter">
+      <label>Name:</label><br>
+      <input name="name" required><br>
+      <label>College:</label><br>
+      <input name="college" required><br>
+      <label>Domain:</label><br>
+      <input name="domain" required><br>
+      <label>Duration:</label><br>
+      <input name="duration" required><br><br>
+      <button type="submit">Generate PDF</button>
+    </form>
+  </div>
+</body>
+</html>
+'''
+
+# Route to show form
+@app.route('/')
+def index():
+    return render_template_string(form_html)
+
+# Route to generate PDF
+@app.route('/generate_offer_letter', methods=['POST'])
+def generate_pdf():
+    name = request.form['name']
+    college = request.form['college']
+    domain = request.form['domain']
+    duration = request.form['duration']
+
+    # Create PDF in memory
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=LETTER)
+    pdf.setFont("Times-Roman", 12)
+
+    # Write content
+    pdf.drawString(100, 750, "Micro Information Technology Services (MITS)")
+    pdf.setFont("Times-Bold", 14)
+    pdf.drawString(100, 720, "Internship Offer Letter")
+
+    pdf.setFont("Times-Roman", 12)
+    pdf.drawString(100, 690, f"Dear {name},")
+    pdf.drawString(100, 670, "We are pleased to offer you an internship at MITS.")
+    pdf.drawString(100, 650, f"College: {college}")
+    pdf.drawString(100, 630, f"Domain: {domain}")
+    pdf.drawString(100, 610, f"Duration: {duration}")
+    pdf.drawString(100, 580, "This opportunity will help you gain valuable real-world experience.")
+    pdf.drawString(100, 560, "We look forward to having you on board.")
+    pdf.drawString(100, 520, "Sincerely,")
+    pdf.drawString(100, 500, "MITS Internship Team")
+
+    pdf.showPage()
+    pdf.save()
+    buffer.seek(0)
+
+    # Send PDF as response
+    response = make_response(buffer.read())
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'inline; filename={name}_OfferLetter.pdf'
+    return response
+
+if __name__ == '__main__':
+    app.run(debug=True)
